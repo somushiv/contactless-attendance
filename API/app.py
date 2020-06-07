@@ -2,11 +2,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 import os
-import psycopg2
+import mysql.connector
 import cv2
 import numpy as np
 import re
-
 
 # Get the relativ path to this file (we will use it later)
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -15,26 +14,36 @@ FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 app = Flask(__name__)
 CORS(app, support_credentials=True)
 
-
-
 # * ---------- DATABASE CONFIG --------- *
-DATABASE_USER = os.environ['DATABASE_USER']
-DATABASE_PASSWORD = os.environ['DATABASE_PASSWORD']
-DATABASE_HOST = os.environ['DATABASE_HOST']
-DATABASE_PORT = os.environ['DATABASE_PORT']
-DATABASE_NAME = os.environ['DATABASE_NAME']
+# DATABASE_USER = os.environ['DATABASE_USER']
+# DATABASE_PASSWORD = os.environ['DATABASE_PASSWORD']
+# DATABASE_HOST = os.environ['DATABASE_HOST']
+# DATABASE_PORT = os.environ['DATABASE_PORT']
+# DATABASE_NAME = os.environ['DATABASE_NAME']
+
+DATABASE_USER = "root"
+DATABASE_PASSWORD = "root12"
+DATABASE_HOST = "127.0.0.1"
+DATABASE_PORT = "3306"
+DATABASE_NAME = "pwhdatabase"
+
 
 def DATABASE_CONNECTION():
-    return psycopg2.connect(user=DATABASE_USER,
-                              password=DATABASE_PASSWORD,
-                              host=DATABASE_HOST,
-                              port=DATABASE_PORT,
-                              database=DATABASE_NAME)
-
+    return mysql.connector.connect(user=DATABASE_USER,
+                                   password=DATABASE_PASSWORD,
+                                   host=DATABASE_HOST,
+                                   port=DATABASE_PORT,
+                                   database=DATABASE_NAME)
 
 
 # * --------------------  ROUTES ------------------- *
 # * ---------- Get data from the face recognition ---------- *
+# * ---------- Add new employee ---------- *
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify("Its Home Ficial")
+
+
 @app.route('/receive_data', methods=['POST'])
 def get_receive_data():
     if request.method == 'POST':
@@ -56,23 +65,27 @@ def get_receive_data():
 
             # If use is already in the DB for today:
             if result:
-               print('user IN')
-               image_path = f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}/departure.jpg"
+                print('user IN')
+                image_path = f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}/departure.jpg"
 
                 # Save image
-               os.makedirs(f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}", exist_ok=True)
-               cv2.imwrite(image_path, np.array(json_data['picture_array']))
-               json_data['picture_path'] = image_path
+                os.makedirs(
+                    f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}",
+                    exist_ok=True)
+                cv2.imwrite(image_path, np.array(json_data['picture_array']))
+                json_data['picture_path'] = image_path
 
                 # Update user in the DB
-               update_user_querry = f"UPDATE users SET departure_time = '{json_data['hour']}', departure_picture = '{json_data['picture_path']}' WHERE name = '{json_data['name']}' AND date = '{json_data['date']}'"
-               cursor.execute(update_user_querry)
+                update_user_querry = f"UPDATE users SET departure_time = '{json_data['hour']}', departure_picture = '{json_data['picture_path']}' WHERE name = '{json_data['name']}' AND date = '{json_data['date']}'"
+                cursor.execute(update_user_querry)
 
             else:
                 print("user OUT")
                 # Save image
                 image_path = f"{FILE_PATH}/assets/img/history/{json_data['date']}/{json_data['name']}/arrival.jpg"
-                os.makedirs(f"{FILE_PATH}/assets/img/history/{json_data['date']}/{json_data['name']}", exist_ok=True)
+                os.makedirs(
+                    f"{FILE_PATH}/assets/img/history/{json_data['date']}/{json_data['name']}",
+                    exist_ok=True)
                 cv2.imwrite(image_path, np.array(json_data['picture_array']))
                 json_data['picture_path'] = image_path
 
@@ -113,11 +126,11 @@ def get_employee(name):
 
         # if the user exist in the db:
         if result:
-            print('RESULT: ',result)
+            print('RESULT: ', result)
             # Structure the data and put the dates in string for the front
-            for k,v in enumerate(result):
+            for k, v in enumerate(result):
                 answer_to_send[k] = {}
-                for ko,vo in enumerate(result[k]):
+                for ko, vo in enumerate(result[k]):
                     answer_to_send[k][ko] = str(vo)
             print('answer_to_send: ', answer_to_send)
         else:
@@ -184,7 +197,8 @@ def add_employee():
         print(request.form['nameOfEmployee'])
 
         # Store it in the folder of the know faces:
-        file_path = os.path.join(f"assets/img/users/{request.form['nameOfEmployee']}.jpg")
+        file_path = os.path.join(
+            f"assets/img/users/{request.form['nameOfEmployee']}.jpg")
         image_file.save(file_path)
         answer = 'new employee succesfully added'
     except:
@@ -224,7 +238,33 @@ def delete_employee(name):
     return jsonify(answer)
 
 
-                                 
+import base64
+from io import BytesIO
+from PIL import Image
+import datetime
+
+
+# * ------------ Get Video Image --------- *
+@app.route('/saveimage', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def saveimage():
+    image_data = request.json
+    image_data = image_data['image_data']
+    #image_data = bytes(image_data, encoding="ascii")
+    image_data = image_data[23:]
+    print(image_data)
+    im = base64.b64decode(image_data)
+    x = datetime.datetime.now()
+    file_name = x.strftime("%Y_%m_%d_%H_%M_%S")
+    file_path = os.path.join(f"assets/img/users/{file_name}.jpg")
+    im.save(file_path)
+    im.save('image.jpg')
+    #with open(file_path, 'wb') as f:
+    #    f.write(im)
+
+    return jsonify("test")
+
+
 # * -------------------- RUN SERVER -------------------- *
 if __name__ == '__main__':
     # * --- DEBUG MODE: --- *

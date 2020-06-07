@@ -1,0 +1,18 @@
+.captured-img {
+  display: flex;
+  flex-direction: row;
+}
+.ref-img {
+  width: 200px;
+  padding: 10px;
+}
+.ref-img img {
+  width: 100%;
+}
+h2 {
+  font-size: 45px;
+  line-height: 1;
+  font-weight: normal;
+  color: #013087;
+  text-align: center;
+}
