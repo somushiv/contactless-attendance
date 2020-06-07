@@ -1,8 +1,8 @@
-# Late Checker
+# Contact Less Attendance
 
 ## Description
 
-**Late Checker** is a web app with AI that automate attendance record.
+*Contact Less Attendance** is a web app with AI that automate attendance record.
 It will detect evey face that came in the range of the camera and compare it with the all the employees
 in the system. Then it will automatically update the arrival or departure time in the database.
 At the end you get for every day and every employee a *record* with:
@@ -14,19 +14,6 @@ At the end you get for every day and every employee a *record* with:
 * Departure picture
 * Is he late?
 * Has he left early?
-
-## Screenshot
-![screenshot of the web app](assets/screenshot-webapp.png)
-
-## Features
-
-* You can see the video feed that record people that leave or come in the room.
-* You can search for an employee to check the time of his time of arrival and departure.
-* You can check the keep a screenshot of every arrival or departure.
-* You can add an employee in the system with a single picture.
-* You can delete an employee of the system.
-* You can fastly see the 5 last employee detected by the camera.
-
 
 ## How does it work?
 
@@ -52,8 +39,7 @@ The front-end will display all the data and allow you to seek for individual dat
 * [Front-end details](FRONT/late-checker/README.md)
 
 
-## Team:
+## FORK of :
+https://github.com/GraphtyLove/Face-recognition-project
 
-* [Berge Maxim](https://www.linkedin.com/in/maxim-berge-94b486179/)
-* [Oliveri Giuliano](https://www.linkedin.com/in/giuliano-oliveri-b83b93183/)
-* [Ronveaux Xavier](https://www.linkedin.com/in/xavier-ronveaux-a472b5178/)
+
