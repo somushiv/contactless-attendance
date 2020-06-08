@@ -2,16 +2,16 @@ import React, { useState, useRef } from "react";
 import Webcam from "react-webcam";
 import "./videoStyle.css";
 
-const DataVideoSet = ({ parData1, videoRef, key1, item }) => {
+const DataVideoSet = ({ parData1, videoRef, key1, item, updateImageData }) => {
   const [imgPlaceHolder, setimgPlaceHolder] = useState("");
   const [imgData, setImgData] = useState("");
-  const webcamRef = useRef(null);
+  const imageRef = useRef(null);
 
   const capture = React.useCallback(() => {
     const imageSrc = videoRef.current.getScreenshot();
-    console.log(imageSrc);
+    updateImageData(key1, imageSrc);
     setImgData(imageSrc);
-    setimgPlaceHolder(<img src={imageSrc} id={item} />);
+    setimgPlaceHolder(<img src={imageSrc} id={item} ref={imageRef} />);
   }, [videoRef]);
   return (
     <>

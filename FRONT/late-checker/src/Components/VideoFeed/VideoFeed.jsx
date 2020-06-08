@@ -11,6 +11,7 @@ const videoConstraints = {
 const VideoFeed = () => {
   const [parData, setParData] = useState("This is one its working");
   const numImages = ["somu1", "somu2", "somu3"];
+  const [dataset_images, setDataset_images] = useState(numImages);
   const VideoFeedSection = styled.section`
     display: flex;
     flex-direction: column;
@@ -25,6 +26,12 @@ const VideoFeed = () => {
     }
   `;
 
+  const updateImageData = (img_parameter, img_reference) => {
+    let tmp_array = dataset_images;
+    tmp_array[img_parameter] = img_reference;
+    setDataset_images(tmp_array);
+    console.log(dataset_images);
+  };
   const webcamRef = useRef(null);
   // const capture = React.useCallback(() => {
   //   const imageSrc = webcamRef.current.getScreenshot();
@@ -33,20 +40,22 @@ const VideoFeed = () => {
   //   setimgPlaceHolder(<img src={imageSrc} id="profileImage" />);
   // }, [webcamRef]);
 
-  // const saveImage = () => {
-  //   fetch("http://127.0.0.1:5000/saveimage", {
-  //     method: "POST",
-  //     headers: {
-  //       Accept: "application/json",
-  //       "Content-Type": "application/json",
-  //     },
-  //     body: JSON.stringify({ image_data: imgData }),
-  //   })
-  //     .then((reposonse) => reposonse.json())
-  //     .then((response) => {
-  //       console.log(response);
-  //     });
-  // };
+  const saveImage = () => {
+    // const refImage = document.getElementById("somu1");
+    // var imgData = refImage.src;
+    fetch("http://127.0.0.1:5000/saveimage", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image_data: dataset_images }),
+    })
+      .then((reposonse) => reposonse.json())
+      .then((response) => {
+        console.log(response);
+      });
+  };
 
   return (
     <>
@@ -63,13 +72,17 @@ const VideoFeed = () => {
               parData1={parData}
               videoRef={webcamRef}
               key1={i}
+              key={i}
               item={item}
+              updateImageData={updateImageData}
             />
           ))}
         </div>
 
         {/* <button onClick={capture}>Capture photo</button> */}
-        {/* <button onClick={saveImage}>Save Image</button> */}
+        <button onClick={saveImage} className="testing">
+          Save Image
+        </button>
       </VideoFeedSection>
     </>
   );

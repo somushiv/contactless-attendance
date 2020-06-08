@@ -6,7 +6,7 @@ import mysql.connector
 import cv2
 import numpy as np
 import re
-
+import sys
 # Get the relativ path to this file (we will use it later)
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -248,17 +248,23 @@ import datetime
 @app.route('/saveimage', methods=['POST'])
 @cross_origin(supports_credentials=True)
 def saveimage():
-    image_data = request.json
-    image_data = image_data['image_data']
-    #image_data = bytes(image_data, encoding="ascii")
-    image_data = image_data[23:]
-    print(image_data)
-    im = base64.b64decode(image_data)
-    x = datetime.datetime.now()
-    file_name = x.strftime("%Y_%m_%d_%H_%M_%S")
-    file_path = os.path.join(f"assets/img/users/{file_name}.jpg")
-    im.save(file_path)
-    im.save('image.jpg')
+    image_data_object = request.json
+
+    image_data_list = image_data_object['image_data']
+
+    c = 0
+    for image_data in image_data_list:
+        starter = image_data.find(',')
+        image_data = image_data[starter + 1:]
+
+        image_data = bytes(image_data, encoding="ascii")
+        im = Image.open(BytesIO(base64.b64decode(image_data)))
+        x = datetime.datetime.now()
+        file_name = x.strftime(f"somu_{c}")
+        file_path = os.path.join(f"assets/img/users/")
+        im.save(f"{file_path}{file_name}.jpg")
+        c += 1
+    # im.save('image.jpg')
     #with open(file_path, 'wb') as f:
     #    f.write(im)
 
