@@ -12,3 +12,20 @@
 body {
   background: #f2f2f2;
 }
+
+box.flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Employee Details style  */
+.emp-label,
+.emp-text {
+  width: 50%;
+}
+.content-block {
+  background-color: #ffffff;
+  margin-top: 1rem;
+  padding: 1rem;
+}

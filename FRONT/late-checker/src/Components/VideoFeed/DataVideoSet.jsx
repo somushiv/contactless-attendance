@@ -17,9 +17,7 @@ const DataVideoSet = ({ parData1, videoRef, key1, item, updateImageData }) => {
     <>
       <div className="ref-img">
         {imgPlaceHolder}
-        <button onClick={capture}>
-          Capture photo {key1} {item}
-        </button>
+        <button onClick={capture}>Capture Photo {key1}</button>
       </div>
     </>
   );

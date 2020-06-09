@@ -9,21 +9,19 @@ const videoConstraints = {
 };
 
 const VideoFeed = () => {
+  // Get Employee Details
+
+  const [empDetails, setEmpDetails] = useState(
+    JSON.parse(localStorage.getItem("empDetails"))
+  );
   const [parData, setParData] = useState("This is one its working");
-  const numImages = ["somu1", "somu2", "somu3"];
+  const numImages = ["imtma1", "imtma2", "imtma3"];
   const [dataset_images, setDataset_images] = useState(numImages);
   const VideoFeedSection = styled.section`
     display: flex;
     flex-direction: column;
     background-color: #ffffff;
     width: 45vw;
-    h2 {
-      font-size: 45px;
-      line-height: 1;
-      font-weight: normal;
-      color: #013087;
-      text-align: center;
-    }
   `;
 
   const updateImageData = (img_parameter, img_reference) => {
@@ -49,7 +47,10 @@ const VideoFeed = () => {
         Accept: "application/json",
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ image_data: dataset_images }),
+      body: JSON.stringify({
+        image_data: dataset_images,
+        emp_number: empDetails.emp_number,
+      }),
     })
       .then((reposonse) => reposonse.json())
       .then((response) => {
@@ -59,6 +60,9 @@ const VideoFeed = () => {
 
   return (
     <>
+      <h2>
+        Registration for {empDetails.emplyeename} , # {empDetails.emp_number}
+      </h2>
       <VideoFeedSection className="some-space">
         <Webcam
           audio={false}

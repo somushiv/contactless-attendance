@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import re
 import sys
+
 # Get the relativ path to this file (we will use it later)
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -25,7 +26,7 @@ DATABASE_USER = "root"
 DATABASE_PASSWORD = "root12"
 DATABASE_HOST = "127.0.0.1"
 DATABASE_PORT = "3306"
-DATABASE_NAME = "pwhdatabase"
+DATABASE_NAME = "orangehrms03102020"
 
 
 def DATABASE_CONNECTION():
@@ -188,7 +189,7 @@ def get_5_last_entries():
 
 
 # * ---------- Add new employee ---------- *
-@app.route('/add_employee', methods=['POST'])
+@app.route('/add_employee')
 @cross_origin(supports_credentials=True)
 def add_employee():
     try:
@@ -208,19 +209,40 @@ def add_employee():
 
 # * ---------- Get employee list ---------- *
 @app.route('/get_employee_list', methods=['GET'])
+@cross_origin(supports_credentials=True)
 def get_employee_list():
-    employee_list = {}
+    # Connect to Database
 
-    # Walk in the user folder to get the user list
-    walk_count = 0
-    for file_name in os.listdir(f"{FILE_PATH}/assets/img/users/"):
-        # Capture the employee's name with the file's name
-        name = re.findall("(.*)\.jpg", file_name)
-        if name:
-            employee_list[walk_count] = name[0]
-        walk_count += 1
+    return "hello"
 
-    return jsonify(employee_list)
+
+@app.route('/list_employee', methods=['GET'])
+@cross_origin(supports_credentials=True)
+def list_employee():
+    db_conn = DATABASE_CONNECTION()
+    db_cursor = db_conn.cursor(dictionary=True)
+
+    db_cursor.execute(
+        "SELECT emp_number,concat(emp_firstname,' ',emp_lastname) as emplyeename FROM hs_hr_employee order by emplyeename limit 0,20;",
+    )
+    db_result = db_cursor.fetchall()
+    # Connect to Database
+    return jsonify(db_result)
+
+
+@app.route('/employee_data', methods=['POST'])
+@cross_origin(supports_credentials=True)
+def employee_data():
+    if request.method == 'POST':
+        json_data = request.get_json()
+        emp_number = json_data['emp_number']
+        db_conn = DATABASE_CONNECTION()
+        db_cursor = db_conn.cursor(dictionary=True)
+        employee_entries_sql_query = f"SELECT emp_number,concat(emp_firstname,' ',emp_lastname) as emplyeename,city_code,emp_work_email FROM hs_hr_employee where emp_number={emp_number};"
+        db_cursor.execute(employee_entries_sql_query)
+        db_result = db_cursor.fetchone()
+    # Connect to Database
+    return jsonify(db_result)
 
 
 # * ---------- Delete employee ---------- *
@@ -244,6 +266,18 @@ from PIL import Image
 import datetime
 
 
+def getFilePath(emp_number=0):
+    #path = os.getcwd()
+
+    file_path = os.path.join(f"assets/img/users/staff_{emp_number}")
+    checkPath = os.path.isdir(file_path)
+
+    if not checkPath:
+        os.mkdir(file_path)
+
+    return file_path
+
+
 # * ------------ Get Video Image --------- *
 @app.route('/saveimage', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -251,7 +285,7 @@ def saveimage():
     image_data_object = request.json
 
     image_data_list = image_data_object['image_data']
-
+    file_path = getFilePath(image_data_object['emp_number'])
     c = 0
     for image_data in image_data_list:
         starter = image_data.find(',')
@@ -260,9 +294,9 @@ def saveimage():
         image_data = bytes(image_data, encoding="ascii")
         im = Image.open(BytesIO(base64.b64decode(image_data)))
         x = datetime.datetime.now()
-        file_name = x.strftime(f"somu_{c}")
-        file_path = os.path.join(f"assets/img/users/")
-        im.save(f"{file_path}{file_name}.jpg")
+        file_name = x.strftime(f"emp_{c}")
+
+        im.save(f"{file_path}/{file_name}.jpg")
         c += 1
     # im.save('image.jpg')
     #with open(file_path, 'wb') as f:
