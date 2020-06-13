@@ -3,6 +3,7 @@ import styled from "styled-components";
 import "./videoStyle.css";
 import Webcam from "react-webcam";
 import DataVideoSet from "./DataVideoSet";
+import { Link, useHistory, withRouter } from "react-router-dom";
 
 const videoConstraints = {
   facingMode: "user",
@@ -10,7 +11,7 @@ const videoConstraints = {
 
 const VideoFeed = () => {
   // Get Employee Details
-
+  let history = useHistory();
   const [empDetails, setEmpDetails] = useState(
     JSON.parse(localStorage.getItem("empDetails"))
   );
@@ -50,6 +51,7 @@ const VideoFeed = () => {
       body: JSON.stringify({
         image_data: dataset_images,
         emp_number: empDetails.emp_number,
+        emp_name: empDetails.emplyeename,
       }),
     })
       .then((reposonse) => reposonse.json())
@@ -57,12 +59,18 @@ const VideoFeed = () => {
         console.log(response);
       });
   };
+  const redirectAdmin = () => {
+    history.push("/admin_module");
+  };
 
   return (
     <>
       <h2>
         Registration for {empDetails.emplyeename} , # {empDetails.emp_number}
       </h2>
+      <button type="button" className="btn btn-success" onClick={redirectAdmin}>
+        Back
+      </button>
       <VideoFeedSection className="some-space">
         <Webcam
           audio={false}
@@ -84,7 +92,7 @@ const VideoFeed = () => {
         </div>
 
         {/* <button onClick={capture}>Capture photo</button> */}
-        <button onClick={saveImage} className="testing">
+        <button onClick={saveImage} className="btn btn-primary">
           Save Image
         </button>
       </VideoFeedSection>

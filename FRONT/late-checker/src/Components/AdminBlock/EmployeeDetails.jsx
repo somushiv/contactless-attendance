@@ -1,9 +1,14 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useHistory, withRouter } from "react-router-dom";
 
 function EmployeeDetails({ empDetails }) {
   let history = useHistory();
   console.log(empDetails.emp_number);
+
+  useEffect(() => {
+    localStorage.removeItem("empDetails");
+    localStorage.clear();
+  });
   const onEnrollClick = () => {
     localStorage.setItem("empDetails", JSON.stringify(empDetails));
     history.push("/staff_enrollment");
