@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 import re
 import sys
+import datetime, time
 
 # Get the relativ path to this file (we will use it later)
 FILE_PATH = os.path.dirname(os.path.realpath(__file__))
@@ -49,53 +50,63 @@ def home():
 def get_receive_data():
     if request.method == 'POST':
         json_data = request.get_json()
-
+        name = json_data['name']
+        employee_id = name[name.find("_") + 1:]
+        print(employee_id)
         # Check if the user is already in the DB
         try:
             # Connect to the DB
             connection = DATABASE_CONNECTION()
-            cursor = connection.cursor()
+            cursor = connection.cursor(dictionary=True)
 
             # Query to check if the user as been saw by the camera today
             user_saw_today_sql_query =\
-                f"SELECT * FROM users WHERE date = '{json_data['date']}' AND name = '{json_data['name']}'"
-
+                f"SELECT * FROM hs_hr_attendance WHERE date_format(punchin_time,'%Y-%m-%d')= '{json_data['date']}' AND employee_id = {employee_id} AND punchout_time is null "
+            print(user_saw_today_sql_query)
             cursor.execute(user_saw_today_sql_query)
-            result = cursor.fetchall()
+            result = cursor.fetchone()
             connection.commit()
 
             # If use is already in the DB for today:
             if result:
-                print('user IN')
-                image_path = f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}/departure.jpg"
+                print('user Out')
+                # image_path = f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}/departure.jpg"
 
                 # Save image
-                os.makedirs(
-                    f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}",
-                    exist_ok=True)
-                cv2.imwrite(image_path, np.array(json_data['picture_array']))
-                json_data['picture_path'] = image_path
+                #os.makedirs(
+                #    f"{FILE_PATH}/assets/img/{json_data['date']}/{json_data['name']}",
+                #    exist_ok=True)
+                #cv2.imwrite(image_path, np.array(json_data['picture_array']))
+                #json_data['picture_path'] = image_path
 
                 # Update user in the DB
-                update_user_querry = f"UPDATE users SET departure_time = '{json_data['hour']}', departure_picture = '{json_data['picture_path']}' WHERE name = '{json_data['name']}' AND date = '{json_data['date']}'"
-                cursor.execute(update_user_querry)
+                insert_status = validate_for_facial_insert(
+                    employee_id, json_data['date'])
+                if insert_status:
+                    update_user_querry = f"UPDATE hs_hr_attendance SET punchout_time = '{json_data['date_time']}' WHERE attendance_id = {result['attendance_id']}"
+                    print(update_user_querry)
+                    cursor.execute(update_user_querry)
 
             else:
-                print("user OUT")
+                print("user In")
                 # Save image
-                image_path = f"{FILE_PATH}/assets/img/history/{json_data['date']}/{json_data['name']}/arrival.jpg"
-                os.makedirs(
-                    f"{FILE_PATH}/assets/img/history/{json_data['date']}/{json_data['name']}",
-                    exist_ok=True)
-                cv2.imwrite(image_path, np.array(json_data['picture_array']))
-                json_data['picture_path'] = image_path
+                #image_path = f"{FILE_PATH}/assets/img/history/{json_data['date']}/{json_data['name']}/arrival.jpg"
+                #os.makedirs(
+                #    f"{FILE_PATH}/assets/img/history/{json_data['date']}/{json_data['name']}",
+                #    exist_ok=True)
+                #cv2.imwrite(image_path, np.array(json_data['picture_array']))
+                #json_data['picture_path'] = image_path
 
                 # Create a new row for the user today:
-                insert_user_querry = f"INSERT INTO users (name, date, arrival_time, arrival_picture) VALUES ('{json_data['name']}', '{json_data['date']}', '{json_data['hour']}', '{json_data['picture_path']}')"
-                cursor.execute(insert_user_querry)
+                insert_status = validate_for_facial_insert(
+                    employee_id, json_data['date'])
+                if insert_status:
+                    insert_user_querry = f"INSERT INTO hs_hr_attendance (employee_id, punchin_time,timestamp_diff) VALUES ({employee_id}, '{json_data['date_time']}',0)"
+                    print(insert_user_querry)
+                    cursor.execute(insert_user_querry)
 
-        except (Exception, psycopg2.DatabaseError) as error:
-            print("ERROR DB: ", error)
+        except mysql.connector.Error as err:
+            print("ERROR DB: ", err.errno)
         finally:
             connection.commit()
 
@@ -103,10 +114,42 @@ def get_receive_data():
             if connection:
                 cursor.close()
                 connection.close()
-                print("PostgreSQL connection is closed")
+                print("Mysql connection is closed")
 
         # Return user's data to the front
         return jsonify(json_data)
+
+
+def validate_for_facial_insert(employee_id, date):
+    connection = DATABASE_CONNECTION()
+    cursor = connection.cursor(dictionary=True)
+    query_to_validate = f"SELECT * FROM hs_hr_attendance where employee_id={employee_id} AND date_format(punchin_time,'%Y-%m-%d')='{date}' order by attendance_id desc limit 0,1"
+    print(query_to_validate)
+    cursor.execute(query_to_validate)
+    result = cursor.fetchone()
+    connection.commit()
+    insert_mode = False
+    if result:
+        #Time Validate
+
+        inserted_time = result['punchin_time']
+        current_time = datetime.datetime.now()
+        time_difference = str(current_time - inserted_time)
+        time_difference = time_difference.split(":")
+        print(current_time)
+        print(inserted_time)
+        print(time_difference)
+        if int(time_difference[0]) == 0 and int(time_difference[1]) < 31:
+            print("Less then 30min")
+            insert_mode = False
+        elif int(time_difference[0]) >= 0 and int(time_difference[1]) > 30:
+            print("Entry for 2nd time")
+            insert_mode = True
+
+    else:
+        print("No Entry")
+        insert_mode = True
+    return insert_mode
 
 
 # * ---------- Get all the data of an employee ---------- *
@@ -137,8 +180,8 @@ def get_employee(name):
         else:
             answer_to_send = {'error': 'User not found...'}
 
-    except (Exception, psycopg2.DatabaseError) as error:
-        print("ERROR DB: ", error)
+    except mysql.connector.Error as err:
+        print("ERROR DB: ", err.errno)
     finally:
         # closing database connection:
         if (connection):
@@ -176,8 +219,8 @@ def get_5_last_entries():
         else:
             answer_to_send = {'error': 'error detect'}
 
-    except (Exception, psycopg2.DatabaseError) as error:
-        print("ERROR DB: ", error)
+    except mysql.connector.Error as err:
+        print("ERROR DB: ", err.errno)
     finally:
         # closing database connection:
         if (connection):
@@ -278,6 +321,21 @@ def getFilePath(emp_number=0):
     return file_path
 
 
+def getFilePath_2(emp_number, emp_name):
+    #path = os.getcwd()
+    emp_name = emp_name.replace('.', '-')
+    emp_name = emp_name.replace(' ', '-')
+
+    filename = emp_name + '_' + str(emp_number)
+    file_path = os.path.join(f"assets/img/users/{filename}")
+    checkPath = os.path.isdir(file_path)
+
+    if not checkPath:
+        os.mkdir(file_path)
+
+    return file_path
+
+
 # * ------------ Get Video Image --------- *
 @app.route('/saveimage', methods=['POST'])
 @cross_origin(supports_credentials=True)
@@ -298,6 +356,15 @@ def saveimage():
 
         im.save(f"{file_path}/{file_name}.jpg")
         c += 1
+    #Beta Live Image Locations without dataset
+    file_path2 = getFilePath_2(image_data_object['emp_number'],
+                               image_data_object['emp_name'])
+    image_data = image_data_list[0]
+    image_data = image_data[starter + 1:]
+    image_data = bytes(image_data, encoding="ascii")
+    im = Image.open(BytesIO(base64.b64decode(image_data)))
+    im.save(f"{file_path2}.jpg")
+
     # im.save('image.jpg')
     #with open(file_path, 'wb') as f:
     #    f.write(im)
